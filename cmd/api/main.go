@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	"trainers-backend/internal/config"
 	"trainers-backend/internal/database"
 	"trainers-backend/internal/handler"
@@ -68,6 +69,23 @@ func main() {
 
 	// Публичные роуты
 	app.Post("/api/auth/telegram", authHandler.TelegramAuth)
+
+	// Корневой endpoint
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status":  "ok",
+			"message": "Trainers API is running",
+			"version": "1.0.0",
+		})
+	})
+
+	// Health check
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status": "healthy",
+			"time":   time.Now().Format(time.RFC3339),
+		})
+	})
 
 	// Защищенные роуты
 	api := app.Group("/api", middleware.AuthMiddleware(authService))
