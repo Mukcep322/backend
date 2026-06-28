@@ -36,3 +36,7 @@ func (s *NoteService) Update(ctx context.Context, note *models.Note) error {
 func (s *NoteService) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
+
+func (s *NoteService) GetByID(ctx context.Context, id string) (*models.Note, error) {
+	return s.repo.GetByID(ctx, id)
+}

@@ -29,3 +29,7 @@ func (s *ScheduleService) Update(ctx context.Context, schedule *models.Schedule)
 func (s *ScheduleService) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
+
+func (s *ScheduleService) GetByID(ctx context.Context, id string) (*models.Schedule, error) {
+	return s.repo.GetByID(ctx, id)
+}
