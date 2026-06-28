@@ -42,13 +42,13 @@ func (h *AuthHandler) TelegramAuth(c *fiber.Ctx) error {
 }
 func (h *AuthHandler) GetMe(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
-	// В реальном проекте здесь был бы запрос к userRepo
-	// Для краткости вернем то, что есть в токене
+	role := c.Locals("user_role").(string)
+
 	return c.JSON(dto.Response{
 		Status: "success",
 		Data: fiber.Map{
 			"user_id": userID,
-			"role":    c.Locals("user_role"),
+			"role":    role,
 		},
 	})
 }

@@ -33,7 +33,6 @@ func (r *UserRepo) GetByTelegramID(ctx context.Context, telegramID int64) (*mode
 	}
 	return &user, nil
 }
-
 func (r *UserRepo) GetByID(ctx context.Context, id string) (*models.User, error) {
 	query := `SELECT id, telegram_id, username, first_name, last_name, phone, role, is_active, created_at, updated_at 
 	          FROM users WHERE id = $1`

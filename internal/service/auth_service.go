@@ -10,6 +10,7 @@ import (
 	"trainers-backend/internal/telegram"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -57,9 +58,10 @@ func (s *AuthService) AuthenticateTelegram(ctx context.Context, initData string)
 		// Создаём нового пользователя
 		user = &models.User{
 			TelegramID: telegramID,
-			Username:   userData["username"],
+			Username:   pgtype.Text{String: userData["username"], Valid: userData["username"] != ""},
 			FirstName:  userData["first_name"],
-			LastName:   userData["last_name"],
+			LastName:   pgtype.Text{String: userData["last_name"], Valid: userData["last_name"] != ""},
+			Phone:      pgtype.Text{String: "", Valid: false},
 			Role:       "client",
 		}
 		if err := s.userRepo.Create(ctx, user); err != nil {
@@ -67,9 +69,9 @@ func (s *AuthService) AuthenticateTelegram(ctx context.Context, initData string)
 		}
 	} else {
 		// Обновляем данные существующего пользователя
-		user.Username = userData["username"]
+		user.Username = pgtype.Text{String: userData["username"], Valid: userData["username"] != ""}
 		user.FirstName = userData["first_name"]
-		user.LastName = userData["last_name"]
+		user.LastName = pgtype.Text{String: userData["last_name"], Valid: userData["last_name"] != ""}
 		if err := s.userRepo.Update(ctx, user); err != nil {
 			return nil, "", err
 		}
