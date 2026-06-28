@@ -45,7 +45,7 @@ func main() {
 	schedRepo := repository.NewScheduleRepo(db)
 	notifRepo := repository.NewNotificationRepo(db)
 
-	authService := service.NewAuthService(userRepo, rdb, cfg.JWTSecret, "YOUR_BOT_TOKEN") // Замените на токен бота
+	authService := service.NewAuthService(userRepo, rdb, cfg.JWTSecret, cfg.BotToken) // Замените на токен бота
 	clientService := service.NewClientService(clientRepo, userRepo)
 	measService := service.NewMeasurementService(measRepo)
 	noteService := service.NewNoteService(noteRepo)

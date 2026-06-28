@@ -11,6 +11,7 @@ type Config struct {
 	DBUser     string
 	DBPassword string
 	DBName     string
+	BotToken   string
 	RedisHost  string
 	RedisPort  string
 	Port       string
@@ -25,6 +26,7 @@ func Load() *Config {
 		DBUser:     getEnv("DB_USER", "app"),
 		DBPassword: getEnv("DB_PASSWORD", "apppass"),
 		DBName:     getEnv("DB_NAME", "trainers"),
+		BotToken:   getEnv("BOT_TOKEN", ""),
 		RedisHost:  getEnv("REDIS_HOST", "redis"),
 		RedisPort:  getEnv("REDIS_PORT", "6379"),
 		Port:       getEnv("PORT", "8080"),

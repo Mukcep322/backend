@@ -48,8 +48,9 @@ func ValidateInitData(initData, botToken string) (map[string]string, error) {
 	for _, k := range keys {
 		dataCheckString = append(dataCheckString, fmt.Sprintf("%s=%s", k, parsed.Get(k)))
 	}
+
 	secretKey := hmacSHA256([]byte(botToken), []byte("WebAppData"))
-	computedHash := hmacSHA256(secretKey, []byte(strings.Join(dataCheckString, "\n")))
+	computedHash := hmacSHA256([]byte(secretKey), []byte(strings.Join(dataCheckString, "\n")))
 
 	if computedHash != hash {
 		return nil, fmt.Errorf("invalid hash")
@@ -58,7 +59,9 @@ func ValidateInitData(initData, botToken string) (map[string]string, error) {
 	// Парсим user данные
 	userData := make(map[string]string)
 	for k, v := range parsed {
-		userData[k] = v
+		if len(v) > 0 {
+			userData[k] = v[0] // Берем первый элемент из []string
+		}
 	}
 
 	return userData, nil
