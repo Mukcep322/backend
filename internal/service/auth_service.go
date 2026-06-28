@@ -54,6 +54,7 @@ func (s *AuthService) AuthenticateTelegram(ctx context.Context, initData string)
 	}
 
 	if user == nil {
+		// Создаём нового пользователя
 		user = &models.User{
 			TelegramID: telegramID,
 			Username:   userData["username"],
@@ -64,6 +65,14 @@ func (s *AuthService) AuthenticateTelegram(ctx context.Context, initData string)
 		if err := s.userRepo.Create(ctx, user); err != nil {
 			return nil, "", err
 		}
+	} else {
+		// Обновляем данные существующего пользователя
+		user.Username = userData["username"]
+		user.FirstName = userData["first_name"]
+		user.LastName = userData["last_name"]
+		if err := s.userRepo.Update(ctx, user); err != nil {
+			return nil, "", err
+		}
 	}
 
 	// Генерируем JWT
@@ -72,7 +81,7 @@ func (s *AuthService) AuthenticateTelegram(ctx context.Context, initData string)
 		return nil, "", err
 	}
 
-	// Сохраняем в Redis
+	// Сохраняем в Redis (опционально)
 	s.redis.Set(ctx, "session:"+user.ID, token, 24*time.Hour)
 
 	return user, token, nil
