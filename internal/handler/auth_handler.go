@@ -18,12 +18,18 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 func (h *AuthHandler) TelegramAuth(c *fiber.Ctx) error {
 	var req dto.TelegramAuthRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.Response{Status: "error", Message: "invalid request body"})
+		return c.Status(fiber.StatusBadRequest).JSON(dto.Response{
+			Status:  "error",
+			Message: "invalid request body",
+		})
 	}
 
 	user, token, err := h.authService.AuthenticateTelegram(c.Context(), req.InitData)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(dto.Response{Status: "error", Message: err.Error()})
+		return c.Status(fiber.StatusUnauthorized).JSON(dto.Response{
+			Status:  "error",
+			Message: err.Error(),
+		})
 	}
 
 	return c.JSON(dto.Response{
@@ -34,7 +40,6 @@ func (h *AuthHandler) TelegramAuth(c *fiber.Ctx) error {
 		},
 	})
 }
-
 func (h *AuthHandler) GetMe(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 	// В реальном проекте здесь был бы запрос к userRepo
