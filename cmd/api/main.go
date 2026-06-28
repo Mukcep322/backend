@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -81,6 +82,73 @@ func main() {
 		})
 	})
 
+	app.Get("/test/db", func(c *fiber.Ctx) error {
+		var count int
+		err := db.QueryRow(c.Context(), "SELECT COUNT(*) FROM users").Scan(&count)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"error":  err.Error(),
+				"status": "failed",
+			})
+		}
+
+		// Получим всех пользователей
+		rows, err := db.Query(c.Context(), "SELECT id, telegram_id, username FROM users")
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		defer rows.Close()
+
+		var users []fiber.Map
+		for rows.Next() {
+			var id, username string
+			var telegramID int64
+			rows.Scan(&id, &telegramID, &username)
+			users = append(users, fiber.Map{
+				"id":          id,
+				"telegram_id": telegramID,
+				"username":    username,
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"users_count": count,
+			"users":       users,
+			"status":      "connected",
+		})
+	})
+
+	// Диагностический endpoint 2: Поиск через репозиторий
+	app.Get("/test/find-user/:telegram_id", func(c *fiber.Ctx) error {
+		var telegramID int64
+		fmt.Sscanf(c.Params("telegram_id"), "%d", &telegramID)
+
+		log.Printf("🔍 Searching for telegram_id: %d", telegramID)
+
+		user, err := userRepo.GetByTelegramID(c.Context(), telegramID)
+		if err != nil {
+			log.Printf("❌ Error: %v", err)
+			return c.Status(500).JSON(fiber.Map{
+				"error":       err.Error(),
+				"telegram_id": telegramID,
+			})
+		}
+
+		if user == nil {
+			log.Printf("⚠️ User not found")
+			return c.Status(404).JSON(fiber.Map{
+				"error":       "user not found",
+				"telegram_id": telegramID,
+			})
+		}
+
+		log.Printf("✅ User found: %s", user.ID)
+		return c.JSON(fiber.Map{
+			"user":   user,
+			"status": "found",
+		})
+	})
+
 	// ТЕСТОВЫЙ endpoint для получения токена без Telegram (УДАЛИТЬ В ПРОДАКШЕНЕ!)
 	app.Post("/test/login", func(c *fiber.Ctx) error {
 		var req struct {
@@ -90,12 +158,21 @@ func main() {
 			return c.Status(400).JSON(fiber.Map{"error": "invalid body"})
 		}
 
+		log.Printf("🔍 /test/login: looking for telegram_id=%d", req.TelegramID)
+
 		user, err := userRepo.GetByTelegramID(c.Context(), req.TelegramID)
-		if err != nil || user == nil {
+		if err != nil {
+			log.Printf("❌ DB error: %v", err)
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if user == nil {
+			log.Printf("⚠️ User not found in DB")
 			return c.Status(404).JSON(fiber.Map{"error": "user not found"})
 		}
 
-		// Генерируем JWT
+		log.Printf("✅ User found: %s", user.ID)
+
 		claims := &service.Claims{
 			UserID:     user.ID,
 			Role:       user.Role,
