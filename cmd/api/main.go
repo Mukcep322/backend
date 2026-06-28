@@ -18,6 +18,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func main() {
@@ -63,13 +64,6 @@ func main() {
 		AppName: "Trainers API v1.0",
 	})
 
-	app.Use(logger.New())
-	app.Use(recover.New())
-	app.Use(cors.New())
-
-	// Публичные роуты
-	app.Post("/api/auth/telegram", authHandler.TelegramAuth)
-
 	// Корневой endpoint
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -86,6 +80,54 @@ func main() {
 			"time":   time.Now().Format(time.RFC3339),
 		})
 	})
+
+	// ТЕСТОВЫЙ endpoint для получения токена без Telegram (УДАЛИТЬ В ПРОДАКШЕНЕ!)
+	app.Post("/test/login", func(c *fiber.Ctx) error {
+		var req struct {
+			TelegramID int64 `json:"telegram_id"`
+		}
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "invalid body"})
+		}
+
+		user, err := userRepo.GetByTelegramID(c.Context(), req.TelegramID)
+		if err != nil || user == nil {
+			return c.Status(404).JSON(fiber.Map{"error": "user not found"})
+		}
+
+		// Генерируем JWT
+		claims := &service.Claims{
+			UserID:     user.ID,
+			Role:       user.Role,
+			TelegramID: user.TelegramID,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+				IssuedAt:  jwt.NewNumericDate(time.Now()),
+			},
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenStr, err := token.SignedString([]byte(cfg.JWTSecret))
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.JSON(fiber.Map{
+			"token": tokenStr,
+			"user": fiber.Map{
+				"id":         user.ID,
+				"username":   user.Username,
+				"first_name": user.FirstName,
+				"role":       user.Role,
+			},
+		})
+	})
+
+	app.Use(logger.New())
+	app.Use(recover.New())
+	app.Use(cors.New())
+
+	// Публичные роуты
+	app.Post("/api/auth/telegram", authHandler.TelegramAuth)
 
 	// Защищенные роуты
 	api := app.Group("/api", middleware.AuthMiddleware(authService))
