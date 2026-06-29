@@ -201,8 +201,13 @@ func main() {
 
 	app.Use(logger.New())
 	app.Use(recover.New())
-	app.Use(cors.New())
-
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:  "*", // Для тестирования разрешаем все
+		AllowMethods:  "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+		AllowHeaders:  "Origin,Content-Type,Accept,Authorization",
+		ExposeHeaders: "Content-Length",
+		MaxAge:        86400,
+	}))
 	// Публичные роуты
 	app.Post("/api/auth/telegram", authHandler.TelegramAuth)
 
